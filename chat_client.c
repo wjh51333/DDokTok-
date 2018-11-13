@@ -1,98 +1,104 @@
-/*----------------------------------------------------------------------------------------- 
-ÆÄÀÏ¸í : chat_client.c 
-±â ´É : ¼­¹ö¿¡ Á¢¼ÓÇÑ ÈÄ Å°º¸µåÀÇ ÀÔ·ÂÀ» ¼­¹ö¿¡ Àü´ŞÇÏ°í, 
-¼­¹ö·ÎºÎÅÍ ¿À´Â ¸Ş½ÃÁö¸¦ È­¸é¿¡ Ãâ·ÂÇÑ´Ù. 
-ÄÄÆÄÀÏ : cc -o chat_client chat_client.c readline.c -lsocket -lnsl 
-½ÇÇà¿¹ : chat_client 203.252.65.3 4001 »ç¿ëÀÚ_ID 
--------------------------------------------------------------------------------------------*/ 
-#include <stdio.h> 
-#include <fcntl.h> 
-#include <stdlib.h> 
-#include <sys/socket.h> 
-#include <netinet/in.h> 
-#include <sys/time.h> 
+/* chat_client.c
+ *   ê¸°ëŠ¥ : ì„œë²„ì— ì ‘ì†í•œ í›„ í‚¤ë³´ë“œì˜ ì…ë ¥ì„ ì„œë²„ì— ì „ë‹¬í•˜ê³ ,
+ *         ì„œë²„ë¡œë¶€í„° ì˜¤ëŠ” ë©”ì‹œì§€ë¥¼ í™”ë©´ì— ì¶œë ¥í•œë‹¤.
+ * ì»´íŒŒì¼ : cc -o chat_client chat_client.c readline.c -lsocket -lnsl
+ * ì‹¤í–‰ì˜ˆ : chat_client 203.252.65.3 4001 ì‚¬ìš©ì_ID
+ */
 
-#define MAXLINE 1024 
-#define MAX_SOCK 512 
-char *escapechar = "exit\n"; 
-int readline(int, char *, int); 
+#include <stdio.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <string.h>
+#include <netinet/in.h>
+#include <sys/utime.h>
 
-int s; /* ¼­¹ö¿Í ¿¬°áµÈ ¼ÒÄÏ¹øÈ£ */ 
-struct Name { 
-char n[20]; /* ´ëÈ­¹æ¿¡¼­ »ç¿ëÇÒ ÀÌ¸§ */ 
-int len;	/* ÀÌ¸§ÀÇ Å©±â */ 
-} name; 
+#define MAXLINE 1024
+#define MAX_SOCK 512
 
-int main(int argc, char *argv[]) 
-{ 
-	char line[MAXLINE], sendline[MAXLINE+1]; 
-	int n, pid, size; 
-	struct sockaddr_in server_addr; 
-	int nfds; 
+char *escape = "Exit\n";
+int readLine(int, char*, int);
 
+int s;    /* ì„œë²„ì™€ ì—°ê²°ëœ ì†Œì¼“ë²ˆí˜¸ */
+typedef struct {
+	char n[20];    /* ëŒ€í™”ë°©ì—ì„œ ì‚¬ìš©í•˜ëŠ” ì´ë¦„ */
+	int len;       /* ì´ë¦„ í¬ê¸° */
+} name;
+
+int main(int argc, char *argv[])
+{
+	char line[MAXLINE], sendLine[MAXLINE+1];
+	char recvLine[MAXLINE];
+	int n, pid, size;
+	int nfds;
+	name u_name;
+	struct sockaddr_in server_addr;
 	fd_set read_fds;
-	if( argc < 4 ) { 
-		printf("½ÇÇà¹æ¹ı : %s È£½ºÆ® IPÁÖ¼Ò Æ÷Æ®¹øÈ£ »ç¿ëÀÚÀÌ¸§ \n", argv[0]); 
-		return -1; 
-	} 
 
-	/* Ã¤ÆÃ Âü°¡ÀÚ ÀÌ¸§ ±¸Á¶Ã¼ ÃÊ±âÈ­ */ 
-	sprintf(name.n, "[%s]", argv[3]); 
-	name.len = strlen(name.n); 
+	if (argc < 4) {
+		printf("ì‹¤í–‰ë°©ë²• : %s í˜¸ìŠ¤íŠ¸ IPì£¼ì†Œ í˜¸íŠ¸ë²ˆí˜¸ ì‚¬ìš©ìì´ë¦„ \n", argv[0]);
+		return -1;
+	}
 
-	/* ¼ÒÄÏ »ı¼º */ 
+	/* ì±„íŒ… ì°¸ê°€ì ì´ë¦„ êµ¬ì¡°ì²´ ì´ˆê¸°í™” */
+	sprintf(u_name.n, "[%s]", argv[3]);
+	u_name.len = strlen(u_name.n);
+
+	/* ì†Œì¼“ ìƒì„± */
 	if ((s = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
-		printf("Client : Can't open stream socket.\n"); 
-		return -1; 
-	} 
+		printf("Client : Cant' open stream socket.\n");
+		return -1;
+	}
 
-	/* Ã¤ÆÃ ¼­¹öÀÇ ¼ÒÄÏÁÖ¼Ò ±¸Á¶Ã¼ server_addr ÃÊ±âÈ­ */ 
-	bzero((char *)&server_addr, sizeof(server_addr)); 
-	server_addr.sin_family = AF_INET; 
-	server_addr.sin_addr.s_addr = inet_addr(argv[1]); 
-	server_addr.sin_port = htons(atoi(argv[2])); 
-	/* ¿¬°á¿äÃ» */ 
-	if(connect(s, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) { 
-		printf("Client : Can't connect to server.\n"); 
-		return -1; 
-	} 
-	else { 
-		printf("Á¢¼Ó¿¡ ¼º°øÇß½À´Ï´Ù..\n"); 
-	} 
-	nfds = s + 1; 
-	FD_ZERO(&read_fds); 
-	while(1) { 
-		/* -------------------------------------- selelct() È£Ãâ ---------------------------------------/* 
-		FD_SET(0, &read_fds); 
+	/* ì±„íŒ… ì„œë²„ì˜ ì†Œì¼“ì£¼ì†Œ êµ¬ì¡°ì²´ server_addr ì´ˆê¸°í™” */
+	bzero((char*)&server_addr, sizeof(server_addr));
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_addr.s_addr = inet_addr(argv[1]);
+	server_addr.sin_port = htons(atoi(argv[2]));
+
+	/* ì—°ê²° ìš”ì²­ */
+	if (connect(s, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+		printf("Client : Can't connect to server.\n");
+		return -1;
+	}
+	else
+		printf("ì ‘ì†ì— ì„±ê³µí–ˆìŠµë‹ˆë‹¤.\n");
+
+	nfds = s + 1;
+	FD_ZERO(&read_fds);
+
+	while (1) {
+		// select() í˜¸ì¶œ
+		FD_SET(0, &read_fds);
 		FD_SET(s, &read_fds);
-		if(select(nfds, &read_fds, (fd_set *)0, (fd_set *)0, (struct timeval *)0) < 0) { 
-			printf("select error\n"); 
-			return -1; 
-		} 
+		
+		if (select(nfds, &read_fds, (fd_set*)0, (fd_set*)0, (struct timeval*)0) < 0) {
+			printf("select error\n");
+			return -1;
+		}
 
-		/*------------------------- ¼­¹ö·ÎºÎÅÍ ¼ö½ÅÇÑ ¸Ş½ÃÁö Ã³¸® -------------------------*/ 
-		if (FD_ISSET(s, &read_fds)) { 
-			char recvline[MAXLINE]; 
-			int size; 
-			if ((size = recv(s, recvline, MAXLINE, 0)) > 0) { 
-				recvline[size] = '\0'; 
-				printf("%s \n", recvline); 
-			} 
-		} 
+		// ì„œë²„ë¡œë¶€í„° ìˆ˜ì‹ í•œ ë©”ì‹œì§€ ì²˜ë¦¬
+		if (FD_ISSET(s, &read_fds)) {
+			if ((size = recv(s, recvline, MAXLINE, 0)) > 0) {
+				recvLine[size] = '\0';
+				printf("%s \n", recvLine);
+			}
+		}
 
-		/* --------------------------------- Å°º¸µå ÀÔ·Â Ã³¸® ----------------------------------*/ 
-		if (FD_ISSET(0, &read_fds)) { 
-			if (readline(0, sendline, MAXLINE) > 0) { 
-				size = strlen(sendline); 
-				sprintf(line, "%s %s", name.n, sendline); 
-				if (send(s, line, size + name.len, 0) != (size+name.len)) 
-					printf("Error : Written error on socket.\n"); 
-				if (size == 5 && strncmp(sendline, escapechar, 5) == 0) { 
-					printf("Good bye.\n"); 
-					close(s); 
-					return -1; 
-				} 
-			} 
-		} /* end of Å°º¸µå ÀÔ·Â Ã³¸® */ 
-	} /* end of while() */ 
+		// í‚¤ë³´ë“œ ì…ë ¥ ì²˜ë¦¬
+		if (FD_ISSET(0, &read_fds)) {
+			if (readLine(0, sendLine, MAXLINE) > 0) {
+				size = strlen(sendLine);
+				sprintf(line, "%s %s", u_name.n, sendLine);
+
+				if (send(s, line, size + u_name.len, 0) != (size + u_name.len))
+					printf("Error : Written error on socket.\n");
+
+				if (size == 5 && strncmp(sendLine, escape, 5) == 0) {
+					printf("Goodbye.\n");
+					close(s);
+					return -1;
+				}
+			}
+		}
+	}
 }

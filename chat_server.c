@@ -1,137 +1,147 @@
-/*----------------------------------------------------------------------------------------------
- ÆÄÀÏ¸í : chat_server.c    
- ±â  ´É : Ã¤ÆÃ Âü°¡ÀÚ °ü¸®, Ã¤ÆÃ ¸Ş½ÃÁö ¼ö½Å ¹× ¹æ¼Û 
- ÄÄÆÄÀÏ : cc -o chat_server chat_server.c readline.c -lsocket -lnsl
- ½ÇÇà¿¹ : chat_server 4001
------------------------------------------------------------------------------------------------*/
-#include 	<stdio.h>
-#include 	<fcntl.h>
-#include 	<stdlib.h>
-#include 	<signal.h>
-#include 	<sys/socket.h>
-#include 	<sys/file.h>
-#include 	<netinet/in.h>
+/* chat_server.c
+ *   ê¸°ëŠ¥ : ì±„íŒ… ì°¸ê°€ì ê´€ë¦¬, ì±„íŒ… ë©”ì‹œì§€ ìˆ˜ì‹  ë° ë°©ì†¡ 
+ * ì»´íŒŒì¼ : cc -o chat_server chat_server.c readline.c -lsocket -lnsl
+ * ì‹¤í–‰ì˜ˆ : chat_server 4001
+ */
 
-#define MAXLINE 	1024
-#define MAX_SOCK 	512
- 
-char *escapechar = "exit\n";
-int readline(int, char *, int);
+#include <stdio.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <string.h>
+#include <signal.h>
+#include <sys/socket.h>
+#include <sys/file.h>
+#include <netinet/in.h>
 
-int main(int argc, char *argv[])  {
-   char 	rline[MAXLINE], my_msg[MAXLINE];
-   char 	*start = "´ëÈ­¹æ¿¡ ¿À½Å°É È¯¿µÇÕ´Ï´Ù...\n";
-   int 	i, j, n;
-   int 	s, client_fd, clilen;
-   int	nfds;			/* ÃÖ´ë ¼ÒÄÏ¹øÈ£ +1 */
-   fd_set	read_fds;	/* ÀĞ±â¸¦ °¨ÁöÇÒ ¼ÒÄÏ¹øÈ£ ±¸Á¶Ã¼ */
-   int	num_chat = 0;		/* Ã¤ÆÃ Âü°¡ÀÚ ¼ö */
-   /* Ã¤ÆÃ¿¡ Âü°¡ÇÏ´Â Å¬¶óÀÌ¾ğÆ®µéÀÇ ¼ÒÄÏ¹øÈ£ ¸®½ºÆ® */
-   int 	client_s[MAX_SOCK];
-   struct sockaddr_in 	client_addr, server_addr;
-   
-   if(argc < 2)  {
-      printf("½ÇÇà¹æ¹ı :%s Æ÷Æ®¹øÈ£\n",argv[0]); 
-      return -1;
-   }
-   
-   printf("´ëÈ­¹æ ¼­¹ö ÃÊ±âÈ­ Áß....\n");
+#define MAXLINE 1024
+#define MAX_SOCK 512
 
-   /* ÃÊ±â¼ÒÄÏ »ı¼º */
-   if((s = socket(PF_INET, SOCK_STREAM, 0)) < 0)  {
-      printf("Server: Can't open stream socket.");   
-      return -1;
-   }
-   
-   /* server_addr ±¸Á¶Ã¼ÀÇ ³»¿ë ¼¼ÆÃ */
-   bzero((char *)&server_addr, sizeof(server_addr));  
-   server_addr.sin_family = AF_INET;              
-   server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-   server_addr.sin_port = htons(atoi(argv[1]));     
-   
-   if (bind(s,(struct sockaddr *)&server_addr,sizeof(server_addr)) < 0) {
-      printf("Server: Can't bind local address.\n");
-      return -1;
-   }
-   
-   /* Å¬¶óÀÌ¾ğÆ®·ÎºÎÅÍ ¿¬°á¿äÃ»À» ±â´Ù¸² */
-   listen(s, 5);
+char *escape = "Exit\n";
+int readLine(int, char*, int);
 
-   nfds = s + 1;		/* ÃÖ´ë ¼ÒÄÏ¹øÈ£ +1 */
-   FD_ZERO(&read_fds);
-   
-   while(1) {
-      /* (ÃÖ´ë ¼ÒÄÏ¹øÈ£ +1) °ªÀ» °»½Å */
-      if((num_chat-1) >= 0)  nfds = client_s[num_chat-1] + 1;
+int main(int argc, char *argv[])
+{
+	char rline[MAXLINE], message[MAXLINE];
+	char *start = "ì±„íŒ…ë°©ì— ì˜¤ì‹  ê²ƒì„ í™˜ì˜í•©ë‹ˆë‹¤!!\n";
+	int i, j, n;
+	int s, client_fd, clen;
+	int nfds;          /* ìµœëŒ€ ì†Œì¼“ë²ˆí˜¸ + 1 */
+	int num_chat = 0   /* ì½ê¸°ë¥¼ ê°ì§€í•  ì†Œì¼“ë²ˆí˜¸ êµ¬ì¡°ì²´ */
+	fd_set read_fds;
 
-      /* ÀĞ±â º¯È­¸¦ °¨ÁöÇÒ ¼ÒÄÏ¹øÈ£¸¦ fd_set ±¸Á¶Ã¼¿¡ ÁöÁ¤ */
-      FD_SET(s, &read_fds);
-      for(i=0; i<num_chat; i++)  FD_SET(client_s[i], &read_fds);
-      
-	  /*--------------------------------------- select() È£Ãâ ----------------------------------------- */
-      if (select(nfds, &read_fds, (fd_set *)0, (fd_set *)0,(struct timeval *)0) < 0) {
-	     printf("select error\n");
-	     return -1;
-      }
-  	  /*------------------------------ Å¬¶óÀÌ¾ğÆ® ¿¬°á¿äÃ» Ã³¸® ------------------------------- */
-      if(FD_ISSET(s, &read_fds)) {
-	     clilen = sizeof(client_addr);
-	     client_fd = accept(s, (struct sockaddr *)&client_addr, &clilen);
+	/* ì±„íŒ…ì— ì°¸ê°€í•˜ëŠ” í´ë¼ì´ì–¸íŠ¸ë“¤ì˜ ì†Œì¼“ë²ˆí˜¸ ë¦¬ìŠ¤íŠ¸ */
+	int client_s[MAX_SOCK];
+	struct sockaddr_in client_addr, server_addr;
 
-	     if(client_fd != -1)  {
-	    	/* Ã¤ÆÃ Å¬¶óÀÌ¾ğÆ® ¸ñ·Ï¿¡ Ãß°¡ */
-	    	client_s[num_chat] = client_fd; 
-	    	num_chat++;
-	    	send(client_fd, start, strlen(start), 0);
-	    	printf("%d¹øÂ° »ç¿ëÀÚ Ãß°¡.\n",num_chat);
-	     }
-      }
-      
-      /*------ ÀÓÀÇÀÇ Å¬¶óÀÌ¾ğÆ®°¡ º¸³½ ¸Ş½ÃÁö¸¦ ¸ğµç Å¬¶óÀÌ¾ğÆ®¿¡°Ô ¹æ¼Û ----- */
-      for(i = 0; i < num_chat; i++)  {
-	    if(FD_ISSET(client_s[i], &read_fds)) {
-	       if((n = recv(client_s[i], rline, MAXLINE,0))  > 0)  {
-	         rline[n] = '\0';
+	if (argc < 2) {
+		printf("ì‹¤í–‰ë°©ë²• : %s í¬íŠ¸ë²ˆ \n", argv[0]);
+		return -1;
+	}
 
-	         /* Á¾·á¹®ÀÚ ÀÔ·Â½Ã Ã¤ÆÃ Å»Åğ Ã³¸® */
-	         if (exitCheck(rline, escapechar, 5) == 1) {
-		     shutdown(client_s[i], 2);
-		     if(i != num_chat-1)     client_s[i] = client_s[num_chat-1];
-		     num_chat--;
-		     continue;
-	       	 }
+	printf("-------------ëŒ€í™”ë°© ì„œë²„ ì´ˆê¸°í™” ì¤‘-------------\n");
 
-	          /* ¸ğµç Ã¤ÆÃ Âü°¡ÀÚ¿¡°Ô ¸Ş½ÃÁö ¹æ¼Û */	
-	          for (j = 0; j < num_chat; j++)  send(client_s[j], rline, n, 0);
-	          printf("%s", rline);
-	       }
-	    }
-      }
-   }
+	/* ì´ˆê¸°ì†Œì¼“ ìƒì„± */
+	if ((s = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+		printf("Server: Can't open stream socket.\n");
+		return -1;
+	}
+
+	/* server_addr êµ¬ì¡°ì²´ì˜ ë‚´ìš© ì„¸íŒ… */
+	bzero((char*)&server_addr, sizeof(server_addr));
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	server_addr.sin_port = htons(atoi(argv[1]));
+
+	if (bind(s, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+		printf("Server: Can't bind local address.\n");
+		return -1;
+	}
+
+	/* í´ë¼ì´ì–¸íŠ¸ë¡œë¶€í„° ì—°ê²°ìš”ì²­ì„ ê¸°ë‹¤ë¦¼ */
+	listen(s, 5);
+
+	nfds = s + 1;      /* ìµœëŒ€ ì†Œì¼“ë²ˆí˜¸ + 1 */
+	FD_ZERO(&read_fds);
+
+	while (1) {
+		// (ìµœëŒ€ ì†Œì¼“ë²ˆí˜¸ + 1) ê°’ì„ ê°±ì‹ 
+		if ((num_chat - 1) >= 0)
+			nfds = client_s[num_chat-1] + 1;
+
+		// ì½ê¸° ë³€í™”ë¥¼ ê°ì§€í•  ì†Œì¼“ë²ˆí˜¸ë¥¼ fd_set êµ¬ì¡°ì²´ì— ì§€ì •
+		FD_SET(s, &read_fds);
+
+		for (i = 0; i < num_chat; i++)
+			FD_SET(client_s[i] &read_fds);
+
+		// select() í˜¸ì¶œ
+		if (select(nfds, &read_fds, (fd_set*)0, (fd_set*)0, (struct timeval*)0) < 0) {
+			printf("select error\n");
+			return -1;
+		}
+
+		// í´ë¼ì´ì–¸íŠ¸ ì—°ê²°ìš”ì²­ ì²˜
+		if (FD_ISSET(s, &read_fds)) {
+			clen = sizeof(client_addr);
+			client_fd = accept(s, (struct sockaddr*)&client_addr, &clen);
+
+			if (client_fd != -1) {
+				// ì±„íŒ… í´ë¼ì´ì–¸íŠ¸ ëª©ë¡ì— ì¶”ê°€
+				clinet_s[num_chat] = clinet_fd;
+				num_chat++;
+				send(client_fd, start, strlen(start), 0);
+				printf("%dë²ˆì§¸ ì‚¬ìš©ì ì¶”ê°€.\n", num_chat);
+			}
+		}
+
+		// ì„ì˜ì˜ í´ë¼ì´ì–¸íŠ¸ê°€ ë³´ë‚¸ ë©”ì‹œì§€ë¥¼ ëª¨ë“  í´ë¼ì´ì–¸íŠ¸ì—ê²Œ ë°©
+		for (i = 0; i < num_chat; i++) {
+			if (FD_ISSET(client_s[i], &read_fds)) {
+				if ((n = recv(client_s[i], rline, MAXLINE, 0)) > 0) {
+					rline[n] = '\0';
+
+					// ì¢…ë£Œë¬¸ì ì…ë ¥ì‹œ ì±„íŒ… íƒˆí‡´ ì²˜
+					if (exitCheck(rline, escape, 5) == 1) {
+						shutdown(client_s[i], 2);
+
+						if (i != num_chat - 1)
+							client_s[i] = client_s[num_chat-1];
+							
+						num_chat--;
+						continue;
+					}
+
+					// ëª¨ë“  ì±„íŒ… ì°¸ê°€ìì—ê²Œ ë©”ì‹œì§€ ë°œì†¡
+					for (j = 0; i < num_chat; j++)
+						send(client_s[j], rline, n, 0);
+					printf("%s", rline);
+				}
+			}
+		}
+	}
 }
 
-/* ------------------------------- Á¾·á¹®ÀÚ È®ÀÎ ÇÔ¼ö ---------------------------- 
-exitCheck()´Â ´ÙÀ½ÀÇ ¼¼ °³ÀÇ ÀÎÀÚ¸¦ ÇÊ¿ä·Î ÇÑ´Ù
-	rline: Å¬¶óÀÌ¾ğÆ®°¡ Àü¼ÛÇÑ ¹®ÀÚ¿­ Æ÷ÀÎÅÍ
-	escapechar: Á¾·á¹®ÀÚ Æ÷ÀÎÅÍ
-	len: Á¾·á¹®ÀÚÀÇ Å©±â
----------------------------------------------------------------------------------------------*/
-int exitCheck(rline, escapechar, len)
-  char	*rline;		/* Å¬¶óÀÌ¾ğÆ®°¡ Àü¼ÛÇÑ ¸Ş½ÃÁö */
-  char	*escapechar;	/* Á¾·á¹®ÀÚ */
-  int		len;
-  {
-     int	i, max;
-     char	*tmp;
-   
-     max = strlen(rline);	
-     tmp = rline;
-     for(i = 0; i<max; i++) {
-        if (*tmp == escapechar[0]) {
-  	 	if(strncmp(tmp, escapechar, len) == 0)
-  	    	return 1;
-        } else 
-		tmp++;
-     } 
-   return -1;
+/* ì¢…ë£Œë¬¸ì í™•ì¸ í•¨ìˆ˜ exitCheck()
+ *  rline : í´ë¼ì´ì–¸íŠ¸ê°€ ì „ì†¡í•œ ë¬¸ìì—´ í¬ì¸í„°
+ * escape : ì¢…ë£Œë¬¸ì í¬ì¸í„°
+ *    len : ì¢…ë£Œë¬¸ìì˜ í¬ê¸°
+ */
+int exitCheck(char *rline, char *escape, int len)
+{
+	int i, max;
+	char *tmp;
+
+	max = strlen(rline);
+	tmp = rline;
+
+	for (i = 0; i < max; i++) {
+		if (*tmp == escape[0]) {
+			if (strcmp(tmp, escape, len) == 0)
+					return 1;
+		}
+		else
+			tmp++;
+	}
+
+	return -1;
 }
