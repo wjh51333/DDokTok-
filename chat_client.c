@@ -16,7 +16,6 @@
 #define MAX_SOCK 512
 
 char *escape = "Exit\n";
-int readLine(int, char*, int);
 
 int s;    /* 서버와 연결된 소켓번호 */
 typedef struct {
@@ -86,7 +85,7 @@ int main(int argc, char *argv[])
 
 		// 키보드 입력 처리
 		if (FD_ISSET(0, &read_fds)) {
-			if (readLine(0, sendLine, MAXLINE) > 0) {
+			if (readline(0, sendLine, MAXLINE) > 0) {
 				size = strlen(sendLine);
 				sprintf(line, "%s %s", u_name.n, sendLine);
 
