@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 
 			if (client_fd != -1) {
 				// 채팅 클라이언트 목록에 추가
-				clinet_s[num_chat] = clinet_fd;
+				client_s[num_chat] = client_fd;
 				num_chat++;
 				send(client_fd, start, strlen(start), 0);
 				printf("%d번째 사용자 추가.\n", num_chat);
