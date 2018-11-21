@@ -110,8 +110,41 @@ int main(int argc, char *argv[])
 						num_chat--;
 						continue;
 					}
+					//이모티콘으로 변환하여 전송
+					
+					if(strcmp(rline,"(행복)")==0)
+					{ 
+						for(j=0;i<num_chat;j++)
+							send(client_s[j],"(^ㅡ^)\n",20,0);
+						printf("(^ㅡ^)\n");
+					}
+					else if (strcmp(rline,"(눈물)")==0)
+					{
+						for(j=0;i<num_chat;j++)
+							send(client_s[j],"(ㅠ__ㅠ)\n",20,0);
+						printf("(ㅠ__ㅠ)\n");
+					}
+					else if (strcmp(rline,"(당황)")==0)
+					{
+						for(j=0;i<num_chat;j++)
+							send(client_s[j],"(ㅇ__ㅇ!!)\n",20,0);
+						printf("(ㅇ__ㅇ!!)\n");
+					}
+					else if(strcmp(rline,"(황당)")==0)
+					{
+						for(j=0;i<num_chat;j++)
+							send(client_s[j],"(ㅡ_ㅡ;;)\n",20,0);
+						printf("(ㅡ_ㅡ;;)\n");
+					}
 
-					// 모든 채팅 참가자에게 메시지 발송
+					else if(strcmp(rline,"(화남)")==0)
+					{
+						for(j=i<num_chat;j++)
+							send(client_s[j],"(눈_눈)\n",20,0);
+						printf("눈_눈)\n");
+					}	
+
+					// 모든 채팅 참가자들 전송한 그대로 메시지 발송
 					for (j = 0; i < num_chat; j++)
 						send(client_s[j], rline, n, 0);
 					printf("%s", rline);
