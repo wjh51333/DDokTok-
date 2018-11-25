@@ -141,39 +141,7 @@ int main(int argc, char *argv[])  {
 						sprintf(rline, "[%s] 입장", user[i].name);
 					}
 
-					//이모티콘으로 변환하여 전송
-
-					if(strncmp(rline,"(행복)", strlen("(행복)"))==0)
-					{ 
-						for(j=0;i<num_chat;j++)
-							send(user[j].client_s,"(^ㅡ^)\n",20,0);
-						printf("(^ㅡ^)\n");
-					}
-					else if (strcmp(rline,"(눈물)")==0)
-					{
-						for(j=0;i<num_chat;j++)
-							send(user[j].client_s,"(ㅠ__ㅠ)\n",20,0);
-						printf("(ㅠ__ㅠ)\n");
-					}
-					else if (strcmp(rline,"(당황)")==0)
-					{
-						for(j=0;i<num_chat;j++)
-							send(user[j].client_s,"(ㅇ__ㅇ!!)\n",20,0);
-						printf("(ㅇ__ㅇ!!)\n");
-					}
-					else if(strcmp(rline,"(황당)")==0)
-					{
-						for(j=0;i<num_chat;j++)
-							send(user[j].client_s,"(ㅡ_ㅡ;;)\n",20,0);
-						printf("(ㅡ_ㅡ;;)\n");
-					}
-
-					else if(strcmp(rline,"(화남)")==0)
-					{
-						for(j=0;i<num_chat;j++)
-							send(user[j].client_s,"(눈_눈)\n",20,0);
-						printf("눈_눈)\n");
-					}
+	
 
 
 					if(strstr(rline, whisp)==NULL){
@@ -210,5 +178,3 @@ int exitCheck(char *rline, char *escape, int len)
 	} 
 	return -1;
 }
-
-
