@@ -31,6 +31,9 @@ int main(int argc, char *argv[]) {
 	char msg_name[30] = "name:"; // 이름 보낼 문자열(구분자 name:포함)
 	name u_name;
 	struct sockaddr_in server_addr; 
+
+	int k;
+
 	fd_set read_fds;
 
 	if( argc < 4 ) { 
@@ -95,8 +98,27 @@ int main(int argc, char *argv[]) {
 		// 키보드 입력 처리
 		if (FD_ISSET(0, &read_fds)) { 
 			if (fgets(sendline, MAXLINE, stdin) != NULL) { 
+				
+				//이모티콘으로 변환하여 전송
+				if(strcmp(sendline,"(행복)\n")==0)
+					strcpy(sendline,"(^-^)\n");
+
+				else if (strcmp(sendline,"(슬픔)\n")==0)
+					strcpy(sendline,"(T-T)\n");
+
+				else if (strcmp(sendline,"(당황)\n")==0)
+					strcpy(sendline,"(ㅇ_ㅇ!!)\n");
+
+				else if(strcmp(sendline,"(황당)\n")==0)
+					strcpy(sendline,"(-_-;;)\n");
+
+				else if(strcmp(sendline,"(화남)\n")==0)
+					strcpy(sendline,"(눈_눈)\n");
+
 				size = strlen(sendline);
+
 				sprintf(line, "%s %s", u_name.n, sendline); 
+
 				if (send(s, line, size + u_name.len, 0) != (size+u_name.len)) 
 					printf("Error : Written error on socket.\n"); 
 				if (size == 5 && strncmp(sendline, escapechar, 5) == 0) { 
