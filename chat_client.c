@@ -1,7 +1,7 @@
 /* chat_client.c
  *   기능 : 서버에 접속한 후 키보드의 입력을 서버에 전달하고,
  *         서버로부터 오는 메시지를 화면에 출력한다.
- * 컴파일 : cc -o chat_client chat_client.c readline.c -lsocket -lnsl
+ * 컴파일 : cc -o chat_client chat_client.c
  * 실행예 : chat_client 203.252.65.3 4001 사용자_ID
  */ 
 #include <stdio.h> 
@@ -22,9 +22,12 @@ typedef struct {
 	int len;       /* 이름 크기 */
 } name;
 
+void emoticon(char*, char*, char*);
+
 int main(int argc, char *argv[]) { 
 	char line[MAXLINE], sendline[MAXLINE+1]; 
 	char recvline[MAXLINE];
+	char *ptr = NULL; // 이모티콘 들어갈 위치 반환
 	int n, pid, size; 
 	int nfds;
 	int cnt = 0; // 처음 접속 시 서버에 이름 보
@@ -62,9 +65,10 @@ int main(int argc, char *argv[]) {
 	if(connect(s, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) { 
 		printf("Client : Can't connect to server.\n"); 
 		return -1; 
-	} else { 
-		printf("접속에 성공했습니다..\n");
 	} 
+	else
+		printf("접속에 성공했습니다..\n");
+	 
 	nfds = s + 1; 
 	FD_ZERO(&read_fds);
 
@@ -100,20 +104,16 @@ int main(int argc, char *argv[]) {
 			if (fgets(sendline, MAXLINE, stdin) != NULL) { 
 				
 				//이모티콘으로 변환하여 전송
-				if(strcmp(sendline,"(행복)\n")==0)
-					strcpy(sendline,"(^-^)\n");
-
-				else if (strcmp(sendline,"(슬픔)\n")==0)
-					strcpy(sendline,"(T-T)\n");
-
-				else if (strcmp(sendline,"(당황)\n")==0)
-					strcpy(sendline,"(ㅇ_ㅇ!!)\n");
-
-				else if(strcmp(sendline,"(황당)\n")==0)
-					strcpy(sendline,"(-_-;;)\n");
-
-				else if(strcmp(sendline,"(화남)\n")==0)
-					strcpy(sendline,"(눈_눈)\n");
+				if((ptr = strstr(sendline,"(행복)")) != NULL)
+					emoticon(ptr, sendline, "(^-^) ");
+				else if ((ptr = strstr(sendline,"(슬픔)")) != NULL)
+					emoticon(ptr, sendline, "(T-T) ");
+				else if ((ptr = strstr(sendline,"(당황)")) != NULL)
+					emoticon(ptr, sendline, "(ㅇ_ㅇ!!) ");
+				else if((ptr = strstr(sendline,"(황당)")) != NULL)
+					emoticon(ptr, sendline, "(-_-;;) ");
+				else if((ptr = strstr(sendline,"(화남)")) != NULL)
+					emoticon(ptr, sendline, "(눈_눈) ");
 
 				size = strlen(sendline);
 
@@ -129,5 +129,18 @@ int main(int argc, char *argv[]) {
 
 			} 
 		}
-	}// while()종료
+	}// while() 종료
+}
+
+void emoticon(char *ptr, char *line, char *emoticon) {
+	char result[MAXLINE];
+	int i;
+
+	strncpy(result, line, strlen(line)-strlen(ptr));
+	strcat(result, emoticon);
+	
+	for (i = strlen(result); i < strlen(line)-strlen(ptr)+4; i++)
+		result[i] = line[i];
+
+	strcpy(line, result); 	
 }
