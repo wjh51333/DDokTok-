@@ -1,6 +1,6 @@
 /* chat_server.c
  *   기능 : 채팅 참가자 관리, 채팅 메시지 수신 및 방송 
- * 컴파일 : cc -o chat_server chat_server.c readline.c -lsocket -lnsl
+ * 컴파일 : cc -o chat_server chat_server.c
  * 실행예 : chat_server 4001
  */
 #include 	<stdio.h>
@@ -14,6 +14,7 @@
 
 #define MAXLINE 	1024
 #define MAX_SOCK 	512
+#define MAXTEXT 	1000000
 
 char *escapechar = "Exit\n";
 char *whisp = "Whisper/";
@@ -38,6 +39,8 @@ int main(int argc, char *argv[])  {
 	struct sockaddr_in 	client_addr, server_addr;
 	char *w_name;		/*귓속말 받을 사용자 이름*/
 	char whis[MAXLINE];
+	char save[MAXTEXT];   /* text backup */
+	int fd;
 
 	if(argc < 2)  {
 		printf("실행방법 :%s 포트번호\n",argv[0]); 
@@ -118,6 +121,8 @@ int main(int argc, char *argv[])  {
 					if(strstr(rline, whisp) != NULL){
 						memset(whis, 0, sizeof(whis));
 						strcpy(whis, rline);
+						strcat(save, rline);
+						strcat(save, "\n");
 						w_name = strtok(whis, "/");
 						w_name = strtok(NULL, "/");
 						printf("whisper user is %s\n", w_name);
@@ -141,14 +146,24 @@ int main(int argc, char *argv[])  {
 						sprintf(rline, "[%s] 입장", user[i].name);
 					}
 
-	
+					// 대화내용 저장
+					if (strstr(rline, "#save") != NULL) {
+						if ((fd = open("./backup.txt", O_WRONLY | O_CREAT | O_APPEND, 0644)) == -1)
+							perror("backup file open");
 
+						write(fd, save, strlen(save));
 
-					if(strstr(rline, whisp)==NULL){
+						close(fd);
+					} 
+						
+
+					if(strstr(rline, whisp)==NULL || strstr(rline, "#save") == NULL) {
 						// 모든 채팅 참가자에게 메시지 방송 (귓속말인 경우 제외)
 						for (j = 0; j < num_chat; j++)  send(user[j].client_s, rline, n, 0);
 						//printf("%d: %s\n", j, user[j].name);
 						printf("%s\n", rline);
+						strcat(save, rline);
+						strcat(save, "\n");
 					}
 				}
 			}
