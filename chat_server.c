@@ -1,6 +1,6 @@
 /* chat_server.c
  *   기능 : 채팅 참가자 관리, 채팅 메시지 수신 및 방송 
- * 컴파일 : cc -o chat_server chat_server.c
+ * 컴파일 : cc -o chat_server chat_server.c readline.c -lsocket -lnsl
  * 실행예 : chat_server 4001
  */
 #include 	<stdio.h>
@@ -14,15 +14,14 @@
 
 #define MAXLINE 	1024
 #define MAX_SOCK 	512
-#define MAXTEXT 	1000000
 
 char *escapechar = "Exit\n";
-char *whisp = "Whisper/";
+char *whisp = "귓속말/";
 
 int exitCheck(char *, char *, int);
 
 struct User { 
-	char *name; /* 대화방에서 사용할 이름 */ 
+	char name[100]; /* 대화방에서 사용할 이름 */ 
 	int 	client_s; /* 채팅에 참가하는 클라이언트들의 소켓번호 리스트 */
 };
 
@@ -37,10 +36,8 @@ int main(int argc, char *argv[])  {
 	fd_set	read_fds;	/* 읽기를 감지할 소켓번호 구조체 */
 	int	num_chat = 0;		/* 채팅 참가자 수 */
 	struct sockaddr_in 	client_addr, server_addr;
-	char *w_name;		/*귓속말 받을 사용자 이름*/
+	char w_name[100];		/*귓속말 받을 사용자 이름*/
 	char whis[MAXLINE];
-	char save[MAXTEXT];   /* text backup */
-	int fd;
 
 	if(argc < 2)  {
 		printf("실행방법 :%s 포트번호\n",argv[0]); 
@@ -111,28 +108,32 @@ int main(int argc, char *argv[])  {
 
 					// 종료문자 입력시 채팅 탈퇴 처리
 					if (exitCheck(rline, escapechar, 5) == 1) {
-						shutdown(user[i].client_s, 2);
-						if(i != num_chat-1)     user[i].client_s = user[num_chat-1].client_s;
+						//shutdown(user[i].client_s, 2);
+						printf("%s Exit\n", user[i].name);
+						if(i != num_chat-1){
+							user[i].client_s = user[num_chat-1].client_s;
+							strcpy(user[i].name, user[num_chat-1].name);
+						}
 						num_chat--;
 						continue;
+
 					}
 
-					// 귓속말 "Whisper/받을 사람/내용"
+					// 귓속말 "귓속말/받을 사람/내용"
 					if(strstr(rline, whisp) != NULL){
 						memset(whis, 0, sizeof(whis));
 						strcpy(whis, rline);
-						strcat(save, rline);
-						strcat(save, "\n");
-						w_name = strtok(whis, "/");
-						w_name = strtok(NULL, "/");
+						strcpy(w_name, strtok(whis, "/"));
+						strcpy(w_name, strtok(NULL, "/"));
 						printf("whisper user is %s\n", w_name);
 						for(j=0;j<num_chat;j++){
 							//printf("%d: %s\n", j, user[j].name);
 							if(user[j].client_s && w_name != NULL && !strcmp(user[j].name, w_name)){
-								printf("whisper: from %s to %s\n", user[i].name, w_name);
 								send(user[j].client_s, rline, n, 0);
+								printf("whisper: from %s to %s\n", user[i].name, w_name);
+								break;
 							}
-							else if(user[j].client_s == -1 && w_name == NULL){
+							else if(j == num_chat-1){
 								send(user[i].client_s, "whisper fail\n", n, 0);
 							}
 						}
@@ -140,30 +141,53 @@ int main(int argc, char *argv[])  {
 
 					// 이름 입력받았을 때
 					if(strstr(rline, "name:")!=NULL){
-						user[i].name = strtok(rline, ":");
-						user[i].name = strtok(NULL, " ");
+						char* token = strtok(rline, ":");
+						token = strtok(NULL, " ");
+						strcpy(user[i].name, token);
 						printf("%d번째 사용자 이름: %s, %d\n", i+1, user[i].name, user[i].client_s);
 						sprintf(rline, "[%s] 입장", user[i].name);
 					}
 
-					// 대화내용 저장
-					if (strstr(rline, "#save") != NULL) {
-						if ((fd = open("./backup.txt", O_WRONLY | O_CREAT | O_APPEND, 0644)) == -1)
-							perror("backup file open");
+					//이모티콘으로 변환하여 전송
 
-						write(fd, save, strlen(save));
+					if(strstr(rline,"(행복)")!=NULL)
+					{ 
+						for(j=0;i<num_chat;j++)
+							send(user[j].client_s,"(^ㅡ^)\n",20,0);
+						printf("(^ㅡ^)\n");
+					}
+					else if (strstr(rline,"(눈물)")!=NULL)
+					{
+						for(j=0;i<num_chat;j++)
+							send(user[j].client_s,"(ㅠ__ㅠ)\n",20,0);
+						printf("(ㅠ__ㅠ)\n");
+					}
+					else if (strstr(rline,"(당황)")!=NULL)
+					{
+						for(j=0;i<num_chat;j++)
+							send(user[j].client_s,"(ㅇ__ㅇ!!)\n",20,0);
+						printf("(ㅇ__ㅇ!!)\n");
+					}
+					else if(strstr(rline,"(황당)")!=NULL)
+					{
+						for(j=0;i<num_chat;j++)
+							send(user[j].client_s,"(ㅡ_ㅡ;;)\n",20,0);
+						printf("(ㅡ_ㅡ;;)\n");
+					}
 
-						close(fd);
-					} 
-						
+					else if(strstr(rline,"(화남)")!=NULL)
+					{
+						for(j=0;i<num_chat;j++)
+							send(user[j].client_s,"(눈_눈)\n",20,0);
+						printf("눈_눈)\n");
+					}
 
-					if(strstr(rline, whisp)==NULL || strstr(rline, "#save") == NULL) {
+
+					if(strstr(rline, whisp)==NULL){
 						// 모든 채팅 참가자에게 메시지 방송 (귓속말인 경우 제외)
-						for (j = 0; j < num_chat; j++)  send(user[j].client_s, rline, n, 0);
-						//printf("%d: %s\n", j, user[j].name);
-						printf("%s\n", rline);
-						strcat(save, rline);
-						strcat(save, "\n");
+						for (j = 0; j < num_chat; j++){
+							send(user[j].client_s, rline, n, 0);
+						}
 					}
 				}
 			}
@@ -193,3 +217,5 @@ int exitCheck(char *rline, char *escape, int len)
 	} 
 	return -1;
 }
+
+
