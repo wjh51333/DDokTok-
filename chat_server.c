@@ -161,18 +161,12 @@ int main(int argc, char *argv[])  {
 						close(fd);
 					}
 
-					if(strstr(rline, whisp)==NULL || strstr(rline, "#save") == NULL) {
-						for (j = 0; j < num_chat; j++)  send(user[j].client_s, rline, n, 0);
+					if(strstr(rline, whisp)==NULL && strstr(rline, "#save") == NULL) {
+						for (j = 0; j < num_chat; j++)
+							send(user[j].client_s, rline, n, 0);
 						printf("%s\n", rline);
 						strcat(save, rline);
 						strcat(save, "\n");
-					}
-
-					if(strstr(rline, whisp)==NULL){
-						// 모든 채팅 참가자에게 메시지 방송 (귓속말인 경우 제외)
-						for (j = 0; j < num_chat; j++){
-							send(user[j].client_s, rline, n, 0);
-						}
 					}
 				}
 			}
