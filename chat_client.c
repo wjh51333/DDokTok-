@@ -22,15 +22,20 @@ typedef struct {
 	int len;       /* 이름 크기 */
 } name;
 
+void emoticon(char*, char*, char*);
+
 int main(int argc, char *argv[]) { 
 	char line[MAXLINE], sendline[MAXLINE+1]; 
 	char recvline[MAXLINE];
+	char *ptr = NULL; // 이모티콘 들어갈 위치 반환
 	int n, pid, size; 
 	int nfds;
 	int cnt = 0; // 처음 접속 시 서버에 이름 보
 	char msg_name[30] = "name:"; // 이름 보낼 문자열(구분자 name:포함)
 	name u_name;
-	struct sockaddr_in server_addr; 
+	struct sockaddr_in server_addr;
+	int k;
+
 	fd_set read_fds;
 
 	if( argc < 4 ) { 
@@ -94,7 +99,20 @@ int main(int argc, char *argv[]) {
 
 		// 키보드 입력 처리
 		if (FD_ISSET(0, &read_fds)) { 
-			if (fgets(sendline, MAXLINE, stdin) != NULL) { 
+			if (fgets(sendline, MAXLINE, stdin) != NULL) {
+
+				//이모티콘으로 변환하여 전송
+				if((ptr = strstr(sendline,"(행복)")) != NULL)
+					emoticon(ptr, sendline, "(^-^) ");
+				else if ((ptr = strstr(sendline,"(슬픔)")) != NULL)
+					emoticon(ptr, sendline, "(T-T) ");
+				else if ((ptr = strstr(sendline,"(당황)")) != NULL)
+					emoticon(ptr, sendline, "(ㅇ_ㅇ!!) ");
+				else if((ptr = strstr(sendline,"(황당)")) != NULL)
+					emoticon(ptr, sendline, "(-_-;;) ");
+				else if((ptr = strstr(sendline,"(화남)")) != NULL)
+					emoticon(ptr, sendline, "(눈_눈) ");
+
 				size = strlen(sendline);
 				sprintf(line, "%s %s", u_name.n, sendline); 
 				if (send(s, line, size + u_name.len, 0) != (size+u_name.len)) 
@@ -107,4 +125,15 @@ int main(int argc, char *argv[]) {
 			} 
 		}
 	}// while()종료
+}
+
+void emoticon(char *ptr, char *line, char *emoticon) {
+	char result[MAXLINE];
+	int i;
+ 	strncpy(result, line, strlen(line)-strlen(ptr));
+	strcat(result, emoticon);
+	
+	for (i = strlen(result); i < strlen(line)-strlen(ptr)+4; i++)
+		result[i] = line[i];
+ 	strcpy(line, result);
 }

@@ -14,6 +14,7 @@
 
 #define MAXLINE 	1024
 #define MAX_SOCK 	512
+#define MAXTEXT 	1000000
 
 char *escapechar = "Exit\n";
 char *whisp = "귓속말/";
@@ -38,6 +39,8 @@ int main(int argc, char *argv[])  {
 	struct sockaddr_in 	client_addr, server_addr;
 	char w_name[100];		/*귓속말 받을 사용자 이름*/
 	char whis[MAXLINE];
+	char save[MAXTEXT];   /* text backup */
+	int fd;
 
 	if(argc < 2)  {
 		printf("실행방법 :%s 포트번호\n",argv[0]); 
@@ -121,6 +124,8 @@ int main(int argc, char *argv[])  {
 
 					// 귓속말 "귓속말/받을 사람/내용"
 					if(strstr(rline, whisp) != NULL){
+						strcat(save, rline);
+						strcat(save, "\n");
 						memset(whis, 0, sizeof(whis));
 						strcpy(whis, rline);
 						strcpy(w_name, strtok(whis, "/"));
@@ -148,40 +153,20 @@ int main(int argc, char *argv[])  {
 						sprintf(rline, "[%s] 입장", user[i].name);
 					}
 
-					//이모티콘으로 변환하여 전송
-
-					if(strstr(rline,"(행복)")!=NULL)
-					{ 
-						for(j=0;i<num_chat;j++)
-							send(user[j].client_s,"(^ㅡ^)\n",20,0);
-						printf("(^ㅡ^)\n");
-					}
-					else if (strstr(rline,"(눈물)")!=NULL)
-					{
-						for(j=0;i<num_chat;j++)
-							send(user[j].client_s,"(ㅠ__ㅠ)\n",20,0);
-						printf("(ㅠ__ㅠ)\n");
-					}
-					else if (strstr(rline,"(당황)")!=NULL)
-					{
-						for(j=0;i<num_chat;j++)
-							send(user[j].client_s,"(ㅇ__ㅇ!!)\n",20,0);
-						printf("(ㅇ__ㅇ!!)\n");
-					}
-					else if(strstr(rline,"(황당)")!=NULL)
-					{
-						for(j=0;i<num_chat;j++)
-							send(user[j].client_s,"(ㅡ_ㅡ;;)\n",20,0);
-						printf("(ㅡ_ㅡ;;)\n");
+					// 대화내용 저장
+					if (strstr(rline, "#save") != NULL) {
+						if ((fd = open("./backup.txt", O_WRONLY | O_CREAT | O_APPEND, 0644)) == -1)
+							perror("backup file open");
+						write(fd, save, strlen);
+						close(fd);
 					}
 
-					else if(strstr(rline,"(화남)")!=NULL)
-					{
-						for(j=0;i<num_chat;j++)
-							send(user[j].client_s,"(눈_눈)\n",20,0);
-						printf("눈_눈)\n");
+					if(strstr(rline, whisp)==NULL || strstr(rline, "#save") == NULL) {
+						for (j = 0; j < num_chat; j++)  send(user[j].client_s, rline, n, 0);
+						printf("%s\n", rline);
+						strcat(save, rline);
+						strcat(save, "\n");
 					}
-
 
 					if(strstr(rline, whisp)==NULL){
 						// 모든 채팅 참가자에게 메시지 방송 (귓속말인 경우 제외)
