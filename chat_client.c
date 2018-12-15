@@ -14,7 +14,8 @@
 
 #define MAXLINE 1024 
 #define MAX_SOCK 512 
-char *escapechar = "Exit\n"; 
+char *escapechar = "Exit\n";
+char *ExitMessage = "Thisiasdfs21Go1d1ByeEastadsxcxcerEgg"; 
 
 int s; /* 서버와 연결된 소켓번호 */ 
 typedef struct {
@@ -85,7 +86,12 @@ int main(int argc, char *argv[]) {
 
 		// 서버로부터 수신한 메시지 처리
 		if (FD_ISSET(s, &read_fds)) { 
-			if ((size = recv(s, recvline, MAXLINE, 0)) > 0) { 
+			if ((size = recv(s, recvline, MAXLINE, 0)) > 0) {
+				if(strcmp(ExitMessage,recvline)==0)
+				{
+					printf("Goodbye\n");
+					exit(1);
+				} 
 				recvline[size] = '\0'; 
 				printf("%s \n", recvline); 
 			} 
