@@ -23,7 +23,7 @@ typedef struct {
 	int len;       /* 이름 크기 */
 } name;
 
-void emoticon(char*, char*, char*);
+void emoticon(char*, char*, char*, char*);
 
 int main(int argc, char *argv[]) { 
 	char line[MAXLINE], sendline[MAXLINE+1]; 
@@ -109,15 +109,15 @@ int main(int argc, char *argv[]) {
 
 				//이모티콘으로 변환하여 전송
 				if((ptr = strstr(sendline,"(행복)")) != NULL)
-					emoticon(ptr, sendline, "(^-^) ");
+					emoticon(ptr, sendline, "(행복)", "(^-^)");
 				else if ((ptr = strstr(sendline,"(슬픔)")) != NULL)
-					emoticon(ptr, sendline, "(T-T) ");
+					emoticon(ptr, sendline, "(슬픔)", "(T-T)");
 				else if ((ptr = strstr(sendline,"(당황)")) != NULL)
-					emoticon(ptr, sendline, "(ㅇ_ㅇ!!) ");
+					emoticon(ptr, sendline, "(당황)", "(ㅇ_ㅇ!!)");
 				else if((ptr = strstr(sendline,"(황당)")) != NULL)
-					emoticon(ptr, sendline, "(-_-;;) ");
+					emoticon(ptr, sendline, "(황당)", "(-_-;;)");
 				else if((ptr = strstr(sendline,"(화남)")) != NULL)
-					emoticon(ptr, sendline, "(눈_눈) ");
+					emoticon(ptr, sendline, "(화남)", "(눈_눈)");
 
 				size = strlen(sendline);
 				sprintf(line, "%s %s", u_name.n, sendline); 
@@ -133,13 +133,17 @@ int main(int argc, char *argv[]) {
 	}// while()종료
 }
 
-void emoticon(char *ptr, char *line, char *emoticon) {
+void emoticon(char *ptr, char *line, char *original, char *emoticon) {
 	char result[MAXLINE];
-	int i;
- 	strncpy(result, line, strlen(line)-strlen(ptr));
+	char *start;
+
+	if (ptr != line)
+		strncpy(result, line, strlen(line)-strlen(ptr));	
+
 	strcat(result, emoticon);
-	
-	for (i = strlen(result); i < strlen(line)-strlen(ptr)+4; i++)
-		result[i] = line[i];
- 	strcpy(line, result);
+
+	start = ptr + strlen(original);
+	strcat(result, start);
+
+	strcpy(line, result);
 }

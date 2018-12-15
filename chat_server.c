@@ -32,8 +32,8 @@ struct User user[5];
 
 int main(int argc, char *argv[])  {
 	char 	rline[MAXLINE], my_msg[MAXLINE];
-	char 	*start = "대화방에 오신 것 환영합니다!!\n/*Exit:퇴장 귓속말/(사람이름):귓속말 (행복 등):이모티콘*/\n";
-	char	*start0 = "대화방에 오신 것 환영합니다!!\n/*Exit:퇴장.Exit/사람이름:강퇴.귓속말/(사람이름):귓속말.(행복 등):이모티콘*/\n";
+	char 	*start = "대화방에 오신 것 환영합니다!!\n퇴장 : Exit\n백업 : #save\n";
+	char	*start0 = "대화방에 오신 것 환영합니다!!\n퇴장 : Exit\n백업 : #save\n";
 	int 	i, j, n;
 	int 	s, client_fd, clen;
 	int	nfds;			/* 최대 소켓번호 +1 */
@@ -232,4 +232,5 @@ int exitCheck(char *rline, char *escape, int len)
 	} 
 	return -1;
 }
+
 
