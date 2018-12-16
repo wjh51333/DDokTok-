@@ -136,7 +136,8 @@ int main(int argc, char *argv[]) {
 void emoticon(char *ptr, char *line, char *original, char *emoticon) {
 	char result[MAXLINE];
 	char *start;
-
+	result[0] = '\0';
+	
 	if (ptr != line)
 		strncpy(result, line, strlen(line)-strlen(ptr));	
 
