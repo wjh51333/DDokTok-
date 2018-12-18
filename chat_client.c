@@ -1,7 +1,7 @@
 /* chat_client.c
  *   기능 : 서버에 접속한 후 키보드의 입력을 서버에 전달하고,
  *         서버로부터 오는 메시지를 화면에 출력한다.
- * 컴파일 : cc -o chat_client chat_client.c readline.c -lsocket -lnsl
+ * 컴파일 : cc chat_client.c -o chat_client
  * 실행예 : chat_client 203.252.65.3 4001 사용자_ID
  */ 
 #include <stdio.h> 
