@@ -194,7 +194,7 @@ int main(int argc, char *argv[])  {
 					if (strstr(rline, "#save") != NULL) {
 						if ((fd = open("./backup.txt", O_WRONLY | O_CREAT | O_APPEND, 0644)) == -1)
 							perror("backup file open");
-						write(fd, save, strlen);
+						write(fd, save, strlen(save));
 						close(fd);
 					}
 
